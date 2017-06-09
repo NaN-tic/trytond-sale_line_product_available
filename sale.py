@@ -21,6 +21,16 @@ class SaleLine:
     forecast_quantity = fields.Function(fields.Float('Forecast Quantity'),
         '_get_quantity')
 
+    @fields.depends('product')
+    def on_change_product(self):
+        super(SaleLine, self).on_change_product()
+        Line = Pool().get('sale.line')
+        self.available_quantity = 0
+
+        if self.product:
+            qty = Line._get_quantity([self], ['available_quantity'])
+            self.available_quantity = qty['available_quantity'][self.id]
+
     @classmethod
     def _get_quantity(cls, lines, names):
         pool = Pool()
@@ -42,6 +52,8 @@ class SaleLine:
                 ])
         confirmed_quantities = {}
         for x in confirmed_lines:
+            if not x.product:
+                continue
             if x.product.id in confirmed_quantities:
                 confirmed_quantities[x.product.id] += x.quantity
             else:
