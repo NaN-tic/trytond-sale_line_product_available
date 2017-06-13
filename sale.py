@@ -1,13 +1,8 @@
 # The COPYRIGHT file at the top level of this repository contains the full
 # copyright notices and license terms.
-import json
-import logging
-from datetime import datetime
-
-from trytond.model import ModelView, Workflow, fields
+from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
-from trytond.rpc import RPC
 
 __all__ = ['SaleLine']
 
@@ -23,10 +18,11 @@ class SaleLine:
 
     @fields.depends('product')
     def on_change_product(self):
-        super(SaleLine, self).on_change_product()
         Line = Pool().get('sale.line')
-        self.available_quantity = 0
 
+        super(SaleLine, self).on_change_product()
+
+        self.available_quantity = 0
         if self.product:
             qty = Line._get_quantity([self], ['available_quantity'])
             self.available_quantity = qty['available_quantity'][self.id]
@@ -37,13 +33,18 @@ class SaleLine:
         Location = pool.get('stock.location')
         Product = pool.get('product.product')
         Date = pool.get('ir.date')
+
         product_ids = list(set([x.product.id for x in lines if x.product]))
+
+        res = {}
+        if not product_ids:
+            return res
+
         context = {
             'locations': [x.id for x in
                 Location.search(['type', '=', 'warehouse'])],
             'stock_date_end': Date.today(),
             }
-        res = {}
         with Transaction().set_context(context):
             products = Product.browse(product_ids)
 
