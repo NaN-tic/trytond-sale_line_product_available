@@ -4,5 +4,6 @@ this repository contains the full copyright notices and license terms. -->
 <data>
     <xpath expr="/tree/field[@name='description']" position="after">
       <field name="available_quantity"/>
+      <field name="forecast_quantity"/>
     </xpath>
 </data>

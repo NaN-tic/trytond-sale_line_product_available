@@ -16,16 +16,36 @@ class SaleLine:
     forecast_quantity = fields.Function(fields.Float('Forecast Quantity'),
         '_get_quantity')
 
-    @fields.depends('product')
+    @fields.depends('product', 'quantity', 'sale', 'type')
     def on_change_product(self):
         Line = Pool().get('sale.line')
 
         super(SaleLine, self).on_change_product()
 
-        self.available_quantity = 0
+        self.available_quantity = None
+        self.forecast_quantity = None
         if self.product:
-            qty = Line._get_quantity([self], ['available_quantity'])
+            qty = Line._get_quantity([self],
+                ['available_quantity', 'forecast_quantity'])
             self.available_quantity = qty['available_quantity'][self.id]
+            forecast_quantity = qty['forecast_quantity'][self.id]
+            if self.sale.state == 'confirmed' and self.quantity:
+                forecast_quantity -= self.quantity
+            self.forecast_quantity = forecast_quantity
+
+
+    @fields.depends('product', 'quantity', 'sale', 'type')
+    def on_change_quantity(self):
+        Line = Pool().get('sale.line')
+        super(SaleLine, self).on_change_quantity()
+        if self.product and self.sale.state == 'confirmed':
+            quantities = Line._get_quantity([self], ['forecast_quantity'])
+            quantity = quantities['forecast_quantity'][self.id]
+            if self.id > 0:
+                quantity += Line(self.id).quantity
+            if self.quantity:
+                quantity -= self.quantity
+            self.forecast_quantity = quantity
 
     @classmethod
     def _get_quantity(cls, lines, names):
@@ -46,8 +66,6 @@ class SaleLine:
             'stock_date_end': Date.today(),
             'with_childs': True,
             }
-        with Transaction().set_context(context):
-            products = Product.browse(product_ids)
 
         confirmed_lines = cls.search([
                 ('sale.state', '=', 'confirmed'),
@@ -62,6 +80,11 @@ class SaleLine:
                 confirmed_quantities[x.product.id] = x.quantity
 
         for name in names:
+            if name == 'forecast_quantity':
+                context.update({'forecast': True})
+            with Transaction().set_context(context):
+                products = Product.browse(product_ids)
+
             res[name] = dict([(x.id, None) for x in lines])
             values = {}
             for product in products:
