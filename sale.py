@@ -44,6 +44,7 @@ class SaleLine:
             'locations': [x.id for x in
                 Location.search(['type', '=', 'warehouse'])],
             'stock_date_end': Date.today(),
+            'with_childs': True,
             }
         with Transaction().set_context(context):
             products = Product.browse(product_ids)
