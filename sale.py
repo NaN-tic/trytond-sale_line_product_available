@@ -10,7 +10,6 @@ __all__ = ['SaleLine']
 class SaleLine:
     __name__ = 'sale.line'
     __metaclass__ = PoolMeta
-
     available_quantity = fields.Function(fields.Float('Available Quantity'),
         '_get_quantity')
     forecast_quantity = fields.Function(fields.Float('Forecast Quantity'),
@@ -25,24 +24,27 @@ class SaleLine:
         self.available_quantity = None
         self.forecast_quantity = None
         if self.product:
-            qty = Line._get_quantity([self],
-                ['available_quantity', 'forecast_quantity'])
-            self.available_quantity = qty['available_quantity'][self.id]
-            forecast_quantity = qty['forecast_quantity'][self.id]
-            if self.sale.state == 'confirmed' and self.quantity:
+            id_ = self.id
+            qty = Line._get_quantity([self], [
+                'available_quantity', 'forecast_quantity'])
+            self.available_quantity = qty['available_quantity'][id_]
+            forecast_quantity = qty['forecast_quantity'][id_]
+            if self.quantity and (self.sale and self.sale.state == 'confirmed'):
                 forecast_quantity -= self.quantity
             self.forecast_quantity = forecast_quantity
-
 
     @fields.depends('product', 'quantity', 'sale', 'type')
     def on_change_quantity(self):
         Line = Pool().get('sale.line')
+
         super(SaleLine, self).on_change_quantity()
-        if self.product and self.sale.state == 'confirmed':
+
+        if self.product and (self.sale and self.sale.state == 'confirmed'):
+            id_ = self.id
             quantities = Line._get_quantity([self], ['forecast_quantity'])
-            quantity = quantities['forecast_quantity'][self.id]
-            if self.id > 0:
-                quantity += Line(self.id).quantity
+            quantity = quantities['forecast_quantity'][id_]
+            if id_ > 0:
+                quantity += Line(id_).quantity
             if self.quantity:
                 quantity -= self.quantity
             self.forecast_quantity = quantity
@@ -57,27 +59,43 @@ class SaleLine:
         product_ids = list(set([x.product.id for x in lines if x.product]))
 
         res = {}
+        for name in names:
+            res[name] = dict((l.id, None) for l in lines)
         if not product_ids:
             return res
 
+        # get the quantity according to the warehouses from sale
+        warehouses = set()
+        for line in lines:
+            if line.sale and line.sale.warehouse:
+                warehouses.add(line.sale.warehouse.id)
+        if warehouses:
+            warehouses = list(warehouses)
+        else:
+            warehouses = [x.id for x in Location.search([
+                'type', '=', 'warehouse'])]
+
         context = {
-            'locations': [x.id for x in
-                Location.search(['type', '=', 'warehouse'])],
+            'locations': warehouses,
             'stock_date_end': Date.today(),
             'with_childs': True,
             }
 
         confirmed_lines = cls.search([
                 ('sale.state', '=', 'confirmed'),
+                ('product', '!=', None),
+                ['OR',
+                    ('sale.warehouse', 'in', warehouses),
+                    ('sale.warehouse', '=', None),
+                    ],
                 ])
         confirmed_quantities = {}
         for x in confirmed_lines:
-            if not x.product:
-                continue
-            if x.product.id in confirmed_quantities:
-                confirmed_quantities[x.product.id] += x.quantity
+            product_id = x.product.id
+            if product_id in confirmed_quantities:
+                confirmed_quantities[product_id] += x.quantity
             else:
-                confirmed_quantities[x.product.id] = x.quantity
+                confirmed_quantities[product_id] = x.quantity
 
         for name in names:
             if name == 'forecast_quantity':
@@ -88,15 +106,17 @@ class SaleLine:
             res[name] = dict([(x.id, None) for x in lines])
             values = {}
             for product in products:
+                product_id = product.id
                 if name == 'available_quantity':
-                    values[product.id] = product.quantity
+                    values[product_id] = product.quantity
                 else:
-                    if product.id in confirmed_quantities:
-                        confirmed_quantity = confirmed_quantities[product.id]
+                    if product_id in confirmed_quantities:
+                        confirmed_quantity = confirmed_quantities[product_id]
                     else:
                         confirmed_quantity = 0.0
-                    values[product.id] = (product.forecast_quantity -
+                    values[product_id] = (product.forecast_quantity -
                         confirmed_quantity)
+
             for line in lines:
                 if line.type == 'line' and line.product:
                     res[name][line.id] = values.get(line.product.id)

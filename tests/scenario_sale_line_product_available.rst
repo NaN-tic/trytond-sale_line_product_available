@@ -1,6 +1,6 @@
-=============
-Sale Scenario
-=============
+====================================
+Sale Line Product Available Scenario
+====================================
 
 Imports::
 
@@ -151,9 +151,7 @@ Create an Inventory::
     >>> config.user = stock_user.id
     >>> Inventory = Model.get('stock.inventory')
     >>> Location = Model.get('stock.location')
-    >>> storage, = Location.find([
-    ...         ('code', '=', 'STO'),
-    ...         ])
+    >>> storage, = Location.find([('code', '=', 'STO')])
     >>> inventory = Inventory()
     >>> inventory.location = storage
     >>> inventory_line = inventory.lines.new(product=product)
@@ -180,22 +178,30 @@ Sale 5 products::
     100.0
     >>> sale_line.forecast_quantity
     100.0
+    >>> sale_line = SaleLine()
+    >>> sale.lines.append(sale_line)
+    >>> sale_line.type = 'comment'
+    >>> sale_line.description = 'Comment'
     >>> sale.click('quote')
     >>> sale.click('confirm')
-    >>> sale.lines[0].available_quantity
-    100.0
-    >>> sale.lines[0].forecast_quantity
-    95.0
-    >>> sale.lines[0].quantity = None
-    >>> sale.lines[0].quantity = 10
-    >>> sale.lines[0].available_quantity
-    100.0
-    >>> sale.lines[0].forecast_quantity
-    90.0
     >>> sale.click('process')
     >>> shipment, = sale.shipments
 
-Validate Shipments::
+    >>> sale2 = Sale()
+    >>> sale2.party = customer
+    >>> sale2.payment_term = payment_term
+    >>> sale2.invoice_method = 'order'
+    >>> sale2_line = SaleLine()
+    >>> sale2.lines.append(sale2_line)
+    >>> sale2_line.product = product
+    >>> sale2_line.quantity = 5
+    >>> sale2_line.available_quantity
+    100.0
+    >>> sale2_line.forecast_quantity
+    95.0
+    >>> sale2.save()
+
+Done shipment::
 
     >>> config.user = stock_user.id
     >>> shipment.click('assign_try')
@@ -203,10 +209,16 @@ Validate Shipments::
     >>> shipment.click('pack')
     >>> shipment.click('done')
 
-Check quantities::
+Check quantities in sale 2::
 
     >>> config.user = sale_user.id
-    >>> sale.lines[0].available_quantity
-    90.0
-    >>> sale.lines[0].forecast_quantity
+    >>> line2, = sale2.lines
+    >>> line2.available_quantity
+    95.0
+    >>> line2.forecast_quantity
+    95.0
+    >>> sale2.click('quote')
+    >>> sale2.click('confirm')
+    >>> line2.reload()
+    >>> line2.forecast_quantity
     90.0
