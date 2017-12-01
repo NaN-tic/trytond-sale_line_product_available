@@ -3,17 +3,22 @@
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
+from trytond.pyson import Eval
 
 __all__ = ['SaleLine']
+
+STATES = {
+    'invisible': Eval('_parent_sale', {}).get('state').in_(['done', 'cancel']),
+    }
 
 
 class SaleLine:
     __name__ = 'sale.line'
     __metaclass__ = PoolMeta
-    available_quantity = fields.Function(fields.Float('Available Quantity'),
-        '_get_quantity')
-    forecast_quantity = fields.Function(fields.Float('Forecast Quantity'),
-        '_get_quantity')
+    available_quantity = fields.Function(fields.Float('Available Quantity',
+            states=STATES), '_get_quantity')
+    forecast_quantity = fields.Function(fields.Float('Forecast Quantity',
+            states=STATES), '_get_quantity')
 
     @fields.depends('product', 'quantity', 'sale', 'type')
     def on_change_product(self):
