@@ -34,7 +34,8 @@ class SaleLine:
                 'available_quantity', 'forecast_quantity'])
             self.available_quantity = qty['available_quantity'][id_]
             forecast_quantity = qty['forecast_quantity'][id_]
-            if self.quantity and (self.sale and self.sale.state == 'confirmed'):
+            if self.quantity and (self.sale and
+                    getattr(self.sale, 'state', False) == 'confirmed'):
                 forecast_quantity -= self.quantity
             self.forecast_quantity = forecast_quantity
 
@@ -72,7 +73,7 @@ class SaleLine:
         # get the quantity according to the warehouses from sale
         warehouses = set()
         for line in lines:
-            if line.sale and line.sale.warehouse:
+            if line.sale and getattr(line.sale, 'warehause', False):
                 warehouses.add(line.sale.warehouse.id)
         if warehouses:
             warehouses = list(warehouses)
