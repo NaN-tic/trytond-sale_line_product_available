@@ -1,0 +1,11 @@
+#
+msgid ""
+msgstr "Content-Type: text/plain; charset=utf-8\n"
+
+msgctxt "field:sale.line,available_quantity:"
+msgid "Available Quantity"
+msgstr "Quantitat disponible"
+
+msgctxt "field:sale.line,forecast_quantity:"
+msgid "Forecast Quantity"
+msgstr "Quantitat prevista"

@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<data>
+    <xpath expr="/form/notebook/page[@id='general']/field[@name='quantity']" position="after">
+      <label name="available_quantity"/>
+      <field name="available_quantity"/>
+      <label name="forecast_quantity"/>
+      <field name="forecast_quantity"/>
+    </xpath>
+</data>
