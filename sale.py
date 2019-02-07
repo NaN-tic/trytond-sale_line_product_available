@@ -12,9 +12,8 @@ STATES = {
     }
 
 
-class SaleLine:
+class SaleLine(metaclass=PoolMeta):
     __name__ = 'sale.line'
-    __metaclass__ = PoolMeta
     available_quantity = fields.Function(fields.Float('Available Quantity',
             states=STATES), '_get_quantity')
     forecast_quantity = fields.Function(fields.Float('Forecast Quantity',

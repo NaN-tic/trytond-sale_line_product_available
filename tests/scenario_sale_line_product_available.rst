@@ -159,7 +159,7 @@ Create an Inventory::
     >>> inventory_line.expected_quantity = 0.0
     >>> inventory.click('confirm')
     >>> inventory.state
-    u'done'
+    'done'
 
 Sale 5 products::
 
