@@ -184,7 +184,6 @@ Sale 5 products::
     >>> sale_line.description = 'Comment'
     >>> sale.click('quote')
     >>> sale.click('confirm')
-    >>> sale.click('process')
     >>> shipment, = sale.shipments
 
     >>> sale2 = Sale()
