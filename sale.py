@@ -30,23 +30,25 @@ class SaleLine(metaclass=PoolMeta):
                 'available_quantity', 'forecast_quantity'])
             self.available_quantity = qty['available_quantity'][id_]
             forecast_quantity = qty['forecast_quantity'][id_]
-            if self.quantity and (self.sale and
-                    getattr(self.sale, 'state', False) == 'confirmed'):
+
+            if (self.quantity and self.sale and
+                    getattr(self.sale, 'state', False) in (
+                        'draft', 'quotation')):
                 forecast_quantity -= self.quantity
             self.forecast_quantity = forecast_quantity
 
     def set_available_on_quantity(self):
         Line = Pool().get('sale.line')
 
-        if self.product and (self.sale and self.sale.state == 'confirmed'):
-            id_ = self.id
+        if (self.product and self.sale and
+                getattr(self.sale, 'state', False) in ('draft', 'quotation')):
+            if not hasattr(self, 'type'):
+                self.type = Line.default_type()
             quantities = Line._get_quantity([self], ['forecast_quantity'])
-            quantity = quantities['forecast_quantity'][id_]
-            if id_ > 0:
-                quantity += Line(id_).quantity
+            forecast_quantity = quantities['forecast_quantity'][self.id]
             if self.quantity:
-                quantity -= self.quantity
-            self.forecast_quantity = quantity
+                forecast_quantity -= self.quantity
+            self.forecast_quantity = forecast_quantity
 
     @fields.depends('product', 'quantity', 'sale')
     def on_change_product(self):
