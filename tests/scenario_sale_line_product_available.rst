@@ -170,6 +170,7 @@ Sale 5 products::
     >>> sale.party = customer
     >>> sale.payment_term = payment_term
     >>> sale.invoice_method = 'order'
+    >>> sale.sale_date = today
     >>> sale_line = SaleLine()
     >>> sale.lines.append(sale_line)
     >>> sale_line.product = product
@@ -177,7 +178,7 @@ Sale 5 products::
     >>> sale_line.available_quantity
     100.0
     >>> sale_line.forecast_quantity
-    100.0
+    95.0
     >>> sale_line = SaleLine()
     >>> sale.lines.append(sale_line)
     >>> sale_line.type = 'comment'
@@ -197,7 +198,7 @@ Sale 5 products::
     >>> sale2_line.available_quantity
     100.0
     >>> sale2_line.forecast_quantity
-    95.0
+    90.0
     >>> sale2.save()
 
 Done shipment::
@@ -215,7 +216,7 @@ Check quantities in sale 2::
     >>> line2.available_quantity
     95.0
     >>> line2.forecast_quantity
-    95.0
+    90.0
     >>> sale2.click('quote')
     >>> sale2.click('confirm')
     >>> line2.reload()
