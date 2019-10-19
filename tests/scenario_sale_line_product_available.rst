@@ -75,13 +75,6 @@ Create chart of accounts::
     >>> accounts = get_accounts(company)
     >>> revenue = accounts['revenue']
     >>> expense = accounts['expense']
-    >>> cash = accounts['cash']
-
-    >>> Journal = Model.get('account.journal')
-    >>> cash_journal, = Journal.find([('type', '=', 'cash')])
-    >>> cash_journal.credit_account = cash
-    >>> cash_journal.debit_account = cash
-    >>> cash_journal.save()
 
 Create tax::
 
@@ -117,7 +110,6 @@ Create product::
     >>> template.name = 'product'
     >>> template.default_uom = unit
     >>> template.type = 'goods'
-    >>> template.purchasable = True
     >>> template.salable = True
     >>> template.list_price = Decimal('10')
     >>> template.cost_price = Decimal('5')
