@@ -20,6 +20,8 @@ class SaleLine(metaclass=PoolMeta):
     forecast_quantity = fields.Function(fields.Float('Forecast Quantity',
             states=STATES), '_get_quantity')
 
+    @fields.depends('available_quantity', 'forecast_quantity',
+        'sale_state')
     def set_available_quantity(self):
         Line = Pool().get('sale.line')
 
@@ -33,19 +35,19 @@ class SaleLine(metaclass=PoolMeta):
             self.available_quantity = None
             self.forecast_quantity = None
 
-    @fields.depends('product', 'quantity', 'sale', 'sale_state', 'warehouse',
-        'type', 'available_quantity', 'forecast_quantity')
+    @fields.depends(methods=['set_available_quantity', '_get_quantity'])
     def on_change_product(self):
         super(SaleLine, self).on_change_product()
         self.set_available_quantity()
 
-    @fields.depends('product', 'quantity', 'sale', 'sale_state', 'warehouse',
-        'type', 'available_quantity', 'forecast_quantity')
+    @fields.depends(methods=['set_available_quantity', '_get_quantity'])
     def on_change_quantity(self):
         super(SaleLine, self).on_change_quantity()
         self.set_available_quantity()
 
     @classmethod
+    @fields.depends('_parent_sale.warehouse', '_parent_sale.sale_date',
+        'product', 'warehouse', 'type', 'quantity', 'sale')
     def _get_quantity(cls, lines, names):
         pool = Pool()
         Product = pool.get('product.product')
