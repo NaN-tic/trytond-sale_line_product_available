@@ -9,7 +9,7 @@ from trytond.pyson import Eval
 __all__ = ['SaleLine']
 
 STATES = {
-    'invisible': Eval('_parent_sale', {}).get('state').in_(['done', 'cancel']),
+    'invisible': Eval('_parent_sale', {}).get('state').in_(['done', 'cancelled']),
     }
 
 
