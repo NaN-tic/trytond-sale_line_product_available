@@ -80,7 +80,7 @@ class SaleLine(metaclass=PoolMeta):
                 ])
         confirmed_quantities = {}
         for x in confirmed_lines:
-            key = (x.warehouse.id, x.product.id)
+            key = (x.warehouse.id if x.warehouse else None, x.product.id)
             if key in confirmed_quantities:
                 confirmed_quantities[key] += x.quantity
             else:
