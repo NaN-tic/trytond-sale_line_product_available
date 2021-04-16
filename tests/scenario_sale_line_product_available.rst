@@ -195,8 +195,11 @@ Done shipment::
     >>> config.user = stock_user.id
     >>> shipment.click('assign_try')
     True
+    >>> shipment.click('pick')
     >>> shipment.click('pack')
     >>> shipment.click('done')
+    >>> shipment.state
+    'done'
 
 Check quantities in sale 2::
 
