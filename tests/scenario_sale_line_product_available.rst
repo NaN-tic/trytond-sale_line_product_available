@@ -16,7 +16,6 @@ Imports::
     ...     create_chart, get_accounts, create_tax
     >>> from trytond.modules.account_invoice.tests.tools import \
     ...     set_fiscalyear_invoice_sequences, create_payment_term
-    >>> today = datetime.date.today()
 
 Install account_invoice::
 
@@ -155,6 +154,7 @@ Create an Inventory::
 
 Sale 5 products::
 
+    >>> today = datetime.date.today()
     >>> config.user = sale_user.id
     >>> Sale = Model.get('sale.sale')
     >>> SaleLine = Model.get('sale.line')
