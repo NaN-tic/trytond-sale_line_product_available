@@ -47,7 +47,8 @@ class SaleLine(metaclass=PoolMeta):
 
     @classmethod
     @fields.depends('_parent_sale.warehouse', '_parent_sale.sale_date',
-        'product', 'warehouse', 'type', 'quantity', 'sale')
+        'product', 'warehouse', 'type', 'quantity', 'sale',
+        methods=['on_change_with_warehouse'])
     def _get_quantity(cls, lines, names):
         pool = Pool()
         Product = pool.get('product.product')
@@ -62,8 +63,8 @@ class SaleLine(metaclass=PoolMeta):
 
         warehouse_ids = set()
         for line in lines:
-            if line.get_warehouse(None):
-                warehouse_ids.add(line.get_warehouse(None))
+            if line.on_change_with_warehouse(None):
+                warehouse_ids.add(line.on_change_with_warehouse(None))
             elif line.sale and line.sale.warehouse:
                 warehouse_ids.add(line.sale.warehouse.id)
         location_ids = list(warehouse_ids)
@@ -114,7 +115,7 @@ class SaleLine(metaclass=PoolMeta):
                     continue
 
                 product_id = line.product.id
-                warehouse_id = (line.get_warehouse(None)
+                warehouse_id = (line.on_change_with_warehouse(None)
                     or line.sale.warehouse and line.sale.warehouse.id)
                 if not warehouse_id:
                     continue
