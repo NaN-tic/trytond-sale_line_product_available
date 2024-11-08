@@ -151,15 +151,13 @@ class Test(unittest.TestCase):
         sale.payment_term = payment_term
         sale.invoice_method = 'order'
         sale.sale_date = today
-        sale_line = SaleLine()
-        sale.lines.append(sale_line)
+        sale_line = sale.lines.new()
         sale_line.product = product
         sale_line.quantity = 5
         self.assertEqual(sale_line.available_quantity, 100.0)
         self.assertEqual(sale_line.forecast_quantity, 95.0)
 
-        sale_line = SaleLine()
-        sale.lines.append(sale_line)
+        sale_line = sale.lines.new()
         sale_line.type = 'comment'
         sale_line.description = 'Comment'
         sale.click('quote')
@@ -169,13 +167,11 @@ class Test(unittest.TestCase):
         sale2.party = customer
         sale2.payment_term = payment_term
         sale2.invoice_method = 'order'
-        sale2_line = SaleLine()
-        sale2.lines.append(sale2_line)
+        sale2_line = sale2.lines.new()
         sale2_line.product = product
         sale2_line.quantity = 5
         self.assertEqual(sale2_line.available_quantity, 100.0)
         self.assertEqual(sale2_line.forecast_quantity, 90.0)
-
         sale2.save()
 
         # Done shipment
