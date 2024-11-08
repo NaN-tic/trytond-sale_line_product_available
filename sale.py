@@ -63,8 +63,9 @@ class SaleLine(metaclass=PoolMeta):
 
         warehouse_ids = set()
         for line in lines:
-            if line.on_change_with_warehouse(None):
-                warehouse_ids.add(line.on_change_with_warehouse(None))
+            warehouse = line.on_change_with_warehouse()
+            if warehouse:
+                warehouse_ids.add(warehouse.id)
             elif line.sale and line.sale.warehouse:
                 warehouse_ids.add(line.sale.warehouse.id)
         location_ids = list(warehouse_ids)
@@ -115,11 +116,11 @@ class SaleLine(metaclass=PoolMeta):
                     continue
 
                 product_id = line.product.id
-                warehouse_id = (line.on_change_with_warehouse(None)
-                    or line.sale.warehouse and line.sale.warehouse.id)
-                if not warehouse_id:
+                warehouse = (line.on_change_with_warehouse()
+                    or line.sale.warehouse)
+                if not warehouse:
                     continue
-                key = (warehouse_id, product_id)
+                key = (warehouse.id, product_id)
 
                 p_qtys = 0
                 pforecast_qtys = 0
