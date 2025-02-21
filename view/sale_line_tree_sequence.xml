@@ -3,7 +3,8 @@
 this repository contains the full copyright notices and license terms. -->
 <data>
     <xpath expr="/tree/field[@name='product']" position="after">
-      <field name="available_quantity"/>
-      <field name="forecast_quantity"/>
+      <field name="available_quantity" optional="0"/>
+      <field name="forecast_quantity" optional="0"/>
+      <field name="in_planned_date" optional="0"/>
     </xpath>
 </data>
