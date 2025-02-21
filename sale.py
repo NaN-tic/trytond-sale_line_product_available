@@ -19,6 +19,8 @@ class SaleLine(metaclass=PoolMeta):
             states=STATES), '_get_quantity')
     forecast_quantity = fields.Function(fields.Float('Forecast Quantity',
             states=STATES), '_get_quantity')
+    in_planned_date = fields.Function(fields.Char("Planned Date",
+            states=STATES), '_get_in_planned_date')
 
     @fields.depends('available_quantity', 'forecast_quantity',
         'sale_state')
@@ -138,5 +140,42 @@ class SaleLine(metaclass=PoolMeta):
                             'draft', 'quotation'):
                         pforecast_qtys -= line.quantity
                     res[name][line.id] = pforecast_qtys
+        return res
 
+    @classmethod
+    def _get_in_planned_date(cls, lines, name):
+        pool = Pool()
+        Move = pool.get('stock.move')
+
+        product_ids = list(set([x.product.id for x in lines if x.product]))
+        res = {l.id: None for l in lines}
+        if not product_ids:
+            return res
+
+        for line in lines:
+            warehouse = line.on_change_with_warehouse()
+            if not warehouse:
+                warehouse = (line.sale.warehouse.id
+                    if line.sale and line.sale.warehouse else None)
+            if not warehouse:
+                continue
+            company = line.sale.company
+            stocks = Move.search([
+                    ('product', '=', line.product),
+                    ('company', '=', company),
+                    ('state', '=', 'draft'),
+                    ('from_location.type', '=', 'supplier'),
+                    ('origin.purchase.warehouse', '=', warehouse,
+                        'purchase.line'),
+                    ['OR',
+                        ('planned_date', '!=', None),
+                        ('shipment.planned_date', '!=', None,
+                            'stock.shipment.in'),
+                    ],
+                    ], order=[('planned_date', 'ASC')], limit=1)
+            if stocks:
+                stock, = stocks
+                res[line.id] = "%s (%s)" % ((stock.planned_date
+                        or stock.shipment.planned_date).strftime("%d/%m/%Y"),
+                    stock.quantity)
         return res
