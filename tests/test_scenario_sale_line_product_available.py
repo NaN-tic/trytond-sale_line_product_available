@@ -4,8 +4,7 @@ from decimal import Decimal
 
 from proteus import Model
 from trytond.modules.account.tests.tools import (create_chart,
-                                                 create_fiscalyear, create_tax,
-                                                 get_accounts)
+    create_fiscalyear, create_tax, get_accounts)
 from trytond.modules.account_invoice.tests.tools import (
     create_payment_term, set_fiscalyear_invoice_sequences)
 from trytond.modules.company.tests.tools import create_company, get_company
@@ -26,7 +25,8 @@ class Test(unittest.TestCase):
     def test(self):
 
         # Install account_invoice
-        config = activate_modules('sale_line_product_available')
+        config = activate_modules(['sale_line_product_available', 'purchase',
+                'stock'])
 
         # Create company
         _ = create_company()
@@ -37,29 +37,17 @@ class Test(unittest.TestCase):
         Group = Model.get('res.group')
         config._context = User.get_preferences(True, config.context)
 
-        # Create sale user
-        sale_user = User()
-        sale_user.name = 'Sale'
-        sale_user.login = 'sale'
+        # Create user with permisos for sale/purchase and stock
+        user = User()
+        user.name = 'User'
+        user.login = 'user'
         sale_group, = Group.find([('name', '=', 'Sales')])
-        sale_user.groups.append(sale_group)
-        sale_user.save()
-
-        # Create stock user
-        stock_user = User()
-        stock_user.name = 'Stock'
-        stock_user.login = 'stock'
         stock_group, = Group.find([('name', '=', 'Stock')])
-        stock_user.groups.append(stock_group)
-        stock_user.save()
-
-        # Create account user
-        account_user = User()
-        account_user.name = 'Account'
-        account_user.login = 'account'
-        account_group, = Group.find([('name', '=', 'Account')])
-        account_user.groups.append(account_group)
-        account_user.save()
+        purchase_group, = Group.find([('name', '=', 'Purchase')])
+        user.groups.append(sale_group)
+        user.groups.append(stock_group)
+        user.groups.append(purchase_group)
+        user.save()
 
         # Create fiscal year
         fiscalyear = set_fiscalyear_invoice_sequences(
@@ -103,6 +91,7 @@ class Test(unittest.TestCase):
         template.default_uom = unit
         template.type = 'goods'
         template.salable = True
+        template.purchasable = True
         template.list_price = Decimal('10')
         template.cost_price = Decimal('5')
         template.cost_price_method = 'fixed'
@@ -128,35 +117,57 @@ class Test(unittest.TestCase):
         payment_term = create_payment_term()
         payment_term.save()
 
-        # Create an Inventory
-        config.user = stock_user.id
-        Inventory = Model.get('stock.inventory')
+        # purchase some products
+        today = datetime.date.today()
+        Purchase = Model.get('purchase.purchase')
         Location = Model.get('stock.location')
-        storage, = Location.find([('code', '=', 'STO')])
-        inventory = Inventory()
-        inventory.location = storage
-        inventory_line = inventory.lines.new(product=product)
-        inventory_line.quantity = 100.0
-        inventory_line.expected_quantity = 0.0
-        inventory.click('confirm')
-        self.assertEqual(inventory.state, 'done')
+        purchase = Purchase()
+        purchase.party = customer
+        purchase.purchase_date = today
+        purchase.delivery_date = today 
+        purchase.warehouse, = Location.find([('type', '=', 'warehouse')])
+        purchase.payment_term = payment_term
+        purchase_line = purchase.lines.new()
+        purchase_line.product = product
+        purchase_line.quantity = 100.0
+        purchase.click('quote')
+        purchase.click('confirm')
+        self.assertEqual(purchase.state, 'processing')
 
         # Sale 5 products
-        today = datetime.date.today()
-        config.user = sale_user.id
+        config.user = user.id
         Sale = Model.get('sale.sale')
-        SaleLine = Model.get('sale.line')
         sale = Sale()
         sale.party = customer
         sale.payment_term = payment_term
+        sale.warehouse, = Location.find([('type', '=', 'warehouse')])
         sale.invoice_method = 'order'
         sale.sale_date = today
         sale_line = sale.lines.new()
         sale_line.product = product
         sale_line.quantity = 5
-        self.assertEqual(sale_line.available_quantity, 100.0)
+        self.assertEqual(sale_line.available_quantity, 0.0)
         self.assertEqual(sale_line.forecast_quantity, 95.0)
+        self.assertEqual(sale_line.in_planned_date,
+            today.strftime("%d/%m/%Y") + ' (100.0)')
 
+        # Validate Shipments
+        Move = Model.get('stock.move')
+        ShipmentIn = Model.get('stock.shipment.in')
+        shipment = ShipmentIn()
+        shipment.supplier = customer
+        for move in purchase.moves:
+            incoming_move = Move(id=move.id)
+            shipment.incoming_moves.append(incoming_move)
+        shipment.save()
+        self.assertEqual(shipment.origins, purchase.rec_name)
+        shipment.click('receive')
+        shipment.click('done')
+        purchase.reload()
+        self.assertEqual(purchase.shipment_state, 'received')
+        self.assertEqual(len(purchase.shipments), 1)
+
+        # Finis sale
         sale_line = sale.lines.new()
         sale_line.type = 'comment'
         sale_line.description = 'Comment'
@@ -175,7 +186,6 @@ class Test(unittest.TestCase):
         sale2.save()
 
         # Done shipment
-        config.user = stock_user.id
         shipment.click('assign_try')
         shipment.click('pick')
         shipment.click('pack')
@@ -183,7 +193,6 @@ class Test(unittest.TestCase):
         self.assertEqual(shipment.state, 'done')
 
         # Check quantities in sale 2
-        config.user = sale_user.id
         line2, = sale2.lines
         self.assertEqual(line2.available_quantity, 95.0)
         self.assertEqual(line2.forecast_quantity, 90.0)

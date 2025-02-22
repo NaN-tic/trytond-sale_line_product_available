@@ -6,7 +6,6 @@ from trytond.pool import PoolMeta, Pool
 from trytond.transaction import Transaction
 from trytond.pyson import Eval
 
-__all__ = ['SaleLine']
 
 STATES = {
     'invisible': Eval('_parent_sale', {}).get('state').in_(['done', 'cancelled']),
@@ -19,8 +18,6 @@ class SaleLine(metaclass=PoolMeta):
             states=STATES), '_get_quantity')
     forecast_quantity = fields.Function(fields.Float('Forecast Quantity',
             states=STATES), '_get_quantity')
-    in_planned_date = fields.Function(fields.Char("Planned Date",
-            states=STATES), '_get_in_planned_date')
 
     @fields.depends('available_quantity', 'forecast_quantity',
         'sale_state')
@@ -39,12 +36,12 @@ class SaleLine(metaclass=PoolMeta):
 
     @fields.depends(methods=['set_available_quantity', '_get_quantity'])
     def on_change_product(self):
-        super(SaleLine, self).on_change_product()
+        super().on_change_product()
         self.set_available_quantity()
 
     @fields.depends(methods=['set_available_quantity', '_get_quantity'])
     def on_change_quantity(self):
-        super(SaleLine, self).on_change_quantity()
+        super().on_change_quantity()
         self.set_available_quantity()
 
     @classmethod
@@ -142,8 +139,15 @@ class SaleLine(metaclass=PoolMeta):
                     res[name][line.id] = pforecast_qtys
         return res
 
+
+class SaleLineDate(metaclass=PoolMeta):
+    __name__ = 'sale.line'
+
+    in_planned_date = fields.Function(fields.Char("Planned Date",
+            states=STATES), '_get_in_planned_date')
+
     @classmethod
-    def _get_in_planned_date(cls, lines, name):
+    def _get_in_planned_date(cls, lines, name=None):
         pool = Pool()
         Move = pool.get('stock.move')
 
@@ -179,3 +183,15 @@ class SaleLine(metaclass=PoolMeta):
                         or stock.shipment.planned_date).strftime("%d/%m/%Y"),
                     stock.quantity)
         return res
+
+    @fields.depends('in_planned_date', 'product')
+    def set_available_quantity(self):
+        Line = Pool().get('sale.line')
+
+        super().set_available_quantity()
+        if self.product:
+            id_ = self.id
+            dates = Line._get_in_planned_date([self])
+            self.in_planned_date = dates[id_]
+        else:
+            self.in_planned_date = None
