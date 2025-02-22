@@ -130,6 +130,7 @@ class Test(unittest.TestCase):
         purchase_line = purchase.lines.new()
         purchase_line.product = product
         purchase_line.quantity = 100.0
+        purchase_line.unit_price = Decimal(2.0)
         purchase.click('quote')
         purchase.click('confirm')
         self.assertEqual(purchase.state, 'processing')
@@ -162,7 +163,7 @@ class Test(unittest.TestCase):
         shipment.save()
         self.assertEqual(shipment.origins, purchase.rec_name)
         shipment.click('receive')
-        shipment.click('done')
+        shipment.click('do')
         purchase.reload()
         self.assertEqual(purchase.shipment_state, 'received')
         self.assertEqual(len(purchase.shipments), 1)
