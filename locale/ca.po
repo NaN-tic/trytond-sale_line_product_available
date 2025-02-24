@@ -9,3 +9,7 @@ msgstr "Quantitat disponible"
 msgctxt "field:sale.line,forecast_quantity:"
 msgid "Forecast Quantity"
 msgstr "Quantitat prevista"
+
+msgctxt "field:sale.line,in_planned_date:"
+msgid "Planned Date"
+msgstr "Data prevista"
