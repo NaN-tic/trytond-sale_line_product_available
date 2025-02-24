@@ -19,7 +19,7 @@ this repository contains the full copyright notices and license terms. -->
     <data depends="purchase,stock">
       <record model="ir.ui.view" id="sale_line_date_view_tree_sequence">
           <field name="model">sale.line</field>
-          <field name="inherit" ref="sale_line_view_tree_sequence"/>
+          <field name="inherit" ref="sale.sale_line_view_tree_sequence"/>
           <field name="name">sale_line_date_tree_sequence</field>
       </record>
     </data>
