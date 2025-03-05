@@ -124,7 +124,7 @@ class Test(unittest.TestCase):
         purchase = Purchase()
         purchase.party = customer
         purchase.purchase_date = today
-        purchase.delivery_date = today 
+        purchase.delivery_date = today
         purchase.warehouse, = Location.find([('type', '=', 'warehouse')])
         purchase.payment_term = payment_term
         purchase_line = purchase.lines.new()

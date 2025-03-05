@@ -150,26 +150,26 @@ class SaleLineDate(metaclass=PoolMeta):
     def _get_in_planned_date(cls, lines, name=None):
         pool = Pool()
         Move = pool.get('stock.move')
+        Lang = pool.get('ir.lang')
 
         product_ids = list(set([x.product.id for x in lines if x.product]))
         res = {l.id: None for l in lines}
         if not product_ids:
             return res
 
+        lang = Lang.get()
         for line in lines:
-            warehouse = line.on_change_with_warehouse()
-            if not warehouse:
-                warehouse = (line.sale.warehouse.id
-                    if line.sale and line.sale.warehouse else None)
-            if not warehouse:
+            if line.type != 'line':
+                continue
+            if not line.warehouse:
                 continue
             company = line.sale.company
-            stocks = Move.search([
+            moves = Move.search([
                     ('product', '=', line.product),
                     ('company', '=', company),
                     ('state', '=', 'draft'),
                     ('from_location.type', '=', 'supplier'),
-                    ('origin.purchase.warehouse', '=', warehouse,
+                    ('origin.purchase.warehouse', '=', line.warehouse,
                         'purchase.line'),
                     ['OR',
                         ('planned_date', '!=', None),
@@ -177,11 +177,15 @@ class SaleLineDate(metaclass=PoolMeta):
                             'stock.shipment.in'),
                     ],
                     ], order=[('planned_date', 'ASC')], limit=1)
-            if stocks:
-                stock, = stocks
-                res[line.id] = "%s (%s)" % ((stock.planned_date
-                        or stock.shipment.planned_date).strftime("%d/%m/%Y"),
-                    stock.quantity)
+            if moves:
+                move, = moves
+                value = ''
+                date = move.planned_date or (move.shipment and move.shipment.planned_date)
+                if date:
+                    value = lang.strftime(date) + ' '
+                value += lang.format_number_symbol(
+                    move.quantity or 0, move.unit, digits=move.unit.digits)
+                res[line.id] = value
         return res
 
     @fields.depends('in_planned_date', 'product')
