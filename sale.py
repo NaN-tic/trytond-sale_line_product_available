@@ -183,7 +183,7 @@ class SaleLineDate(metaclass=PoolMeta):
                 date = move.planned_date or (move.shipment and move.shipment.planned_date)
                 if date:
                     value = lang.strftime(date) + ' '
-                value += lang.format_number_symbol(
+                value += '(%s)' % lang.format_number_symbol(
                     move.quantity or 0, move.unit, digits=move.unit.digits)
                 res[line.id] = value
         return res
