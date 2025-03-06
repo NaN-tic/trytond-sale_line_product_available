@@ -149,8 +149,8 @@ class Test(unittest.TestCase):
         sale_line.quantity = 5
         self.assertEqual(sale_line.available_quantity, 0.0)
         self.assertEqual(sale_line.forecast_quantity, 95.0)
-        self.assertTrue(sale_line.in_planned_date.startswith(
-            '%s %s' % (today.strftime("%m/%d/%Y"), '100')))
+        self.assertEqual(sale_line.in_planned_date,
+            today.strftime("%m/%d/%Y") + ' (100\xa0u)')
 
         # Validate Shipments
         Move = Model.get('stock.move')
