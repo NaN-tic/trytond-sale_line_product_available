@@ -3,7 +3,7 @@
 import datetime
 from trytond.model import fields
 from trytond.pool import PoolMeta, Pool
-from trytond.transaction import Transaction
+from trytond.transaction import Transaction, without_check_access
 from trytond.pyson import Eval
 
 
@@ -157,35 +157,36 @@ class SaleLineDate(metaclass=PoolMeta):
         if not product_ids:
             return res
 
-        lang = Lang.get()
-        for line in lines:
-            if line.type != 'line':
-                continue
-            if not line.warehouse:
-                continue
-            company = line.sale.company
-            moves = Move.search([
-                    ('product', '=', line.product),
-                    ('company', '=', company),
-                    ('state', '=', 'draft'),
-                    ('from_location.type', '=', 'supplier'),
-                    ('origin.purchase.warehouse', '=', line.warehouse,
-                        'purchase.line'),
-                    ['OR',
-                        ('planned_date', '!=', None),
-                        ('shipment.planned_date', '!=', None,
-                            'stock.shipment.in'),
-                    ],
-                    ], order=[('planned_date', 'ASC')], limit=1)
-            if moves:
-                move, = moves
-                value = ''
-                date = move.planned_date or (move.shipment and move.shipment.planned_date)
-                if date:
-                    value = lang.strftime(date) + ' '
-                value += '(%s)' % lang.format_number_symbol(
-                    move.quantity or 0, move.unit, digits=move.unit.digits)
-                res[line.id] = value
+        with without_check_access():
+            lang = Lang.get()
+            for line in lines:
+                if line.type != 'line':
+                    continue
+                if not line.warehouse:
+                    continue
+                company = line.sale.company
+                moves = Move.search([
+                        ('product', '=', line.product),
+                        ('company', '=', company),
+                        ('state', '=', 'draft'),
+                        ('from_location.type', '=', 'supplier'),
+                        ('origin.purchase.warehouse', '=', line.warehouse,
+                            'purchase.line'),
+                        ['OR',
+                            ('planned_date', '!=', None),
+                            ('shipment.planned_date', '!=', None,
+                                'stock.shipment.in'),
+                        ],
+                        ], order=[('planned_date', 'ASC')], limit=1)
+                if moves:
+                    move, = moves
+                    value = ''
+                    date = move.planned_date or (move.shipment and move.shipment.planned_date)
+                    if date:
+                        value = lang.strftime(date) + ' '
+                    value += '(%s)' % lang.format_number_symbol(
+                        move.quantity or 0, move.unit, digits=move.unit.digits)
+                    res[line.id] = value
         return res
 
     @fields.depends('in_planned_date', 'product')
