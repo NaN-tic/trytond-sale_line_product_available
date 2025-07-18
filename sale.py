@@ -24,6 +24,13 @@ class SaleLine(metaclass=PoolMeta):
     def set_available_quantity(self):
         Line = Pool().get('sale.line')
 
+        # In some automated processes, we do  not want to compute the available
+        # and forecast quantities
+        if not Transaction().context.get('with_available_quantity', True):
+            self.available_quantity = None
+            self.forecast_quantity = None
+            return
+
         if self.product and self.sale_state in ('draft', 'quotation'):
             id_ = self.id
             qty = Line._get_quantity([self], [
