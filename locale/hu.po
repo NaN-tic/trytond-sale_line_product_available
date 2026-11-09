@@ -1,0 +1,20 @@
+#
+msgid ""
+msgstr ""
+"Language: hu\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "field:sale.line,available_quantity:"
+msgid "Available Quantity"
+msgstr "Elérhető mennyiség"
+
+msgctxt "field:sale.line,forecast_quantity:"
+msgid "Forecast Quantity"
+msgstr "Előrejelzett mennyiség"
+
+msgctxt "field:sale.line,in_planned_date:"
+msgid "Planned Date"
+msgstr "Tervezett dátum"
